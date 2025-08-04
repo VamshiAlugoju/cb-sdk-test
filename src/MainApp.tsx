@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { CallBridge, Client } from 'sdk-call';
 import type { CallDetails, IMessage } from 'sdk-call';
 import IncomingCallScreen from './IncomingCallScreen';
@@ -8,6 +8,7 @@ import OutgoingCallScreen from './OutgoingCallScreen';
 import IdleScreen from './IdleScreen';
 import ChatScreen from './ChatScreen';
 
+const languages = ['hin', 'eng', 'tel'];
 export default function MainApp() {
   const [user, setUser] = useState({
     apiKey: 'your-api-key',
@@ -19,6 +20,7 @@ export default function MainApp() {
   const [messages, setMessages] = useState<IMessage[]>([]);
 
   const [recipientId, setRecipientId] = useState('');
+  const [lang, setLang] = useState('eng');
 
   const [callState, setCallState] = useState({
     ...Client.callState,
@@ -44,10 +46,6 @@ export default function MainApp() {
   }
 
   useEffect(() => {
-    // if (Client.isValidated) {
-    //   return;
-    // }
-
     Client.onIncomingCall(handleIncomingCall);
     Client.onCallStateChange(handleCallStateChange);
     Client.onCallAnswered(handleCallAnswered);
@@ -69,6 +67,59 @@ export default function MainApp() {
   return (
     <View style={styles.container}>
       <CallBridge />
+      {callState.state === 'idle' && mode != 'chat' && (
+        <View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'red',
+              padding: 10,
+            }}
+            onPress={() => {
+              Client.changeLanguage(languages[0]);
+              setLang(languages[0]);
+            }}
+          >
+            <Text>{languages[0]}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'blue',
+              padding: 10,
+              marginTop: 10,
+            }}
+            onPress={() => {
+              Client.changeLanguage(languages[1]);
+              setLang(languages[1]);
+            }}
+          >
+            <Text>{languages[1]}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'blue',
+              padding: 10,
+              marginTop: 10,
+            }}
+            onPress={() => {
+              Client.changeLanguage(languages[2]);
+              setLang(languages[2]);
+            }}
+          >
+            <Text>{languages[2]}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              Client.init(user);
+            }}
+            style={{
+              padding: 10,
+            }}
+          >
+            <Text>init</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {(mode === 'call' || mode === 'normal') && (
         <View style={{ flex: 1 }}>
           {callState.state === 'incoming' && (
@@ -85,6 +136,7 @@ export default function MainApp() {
                 // none
               }}
               profileImageUri="https://picsum.photos/200/300" // Update to actual source
+              language={lang}
             />
           )}
           {callState.state === 'ongoing' && (
@@ -102,6 +154,7 @@ export default function MainApp() {
               }}
               profileImageUri="https://picsum.photos/200/300" // Update to actual source
               callDuration="03:17"
+              language={lang}
             />
           )}
           {callState.state === 'outgoing' && (
@@ -119,6 +172,7 @@ export default function MainApp() {
                 Client.endCall();
               }}
               profileImageUri="https://picsum.photos/200/300" // Update to actual source
+              language={lang}
             />
           )}
           {callState.state === 'idle' && (
@@ -180,122 +234,3 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
 });
-
-// return (
-//   <View style={styles.container}>
-//     <CallBridge />
-
-//     <TouchableOpacity
-//       style={{
-//         backgroundColor: 'blue',
-//         padding: 10,
-//         alignItems: 'center',
-//         marginTop: 20,
-//       }}
-//       onPress={() => {
-//         Client.init(user);
-//       }}
-//     >
-//       <Text>Init</Text>
-//     </TouchableOpacity>
-//     <Text style={{ marginTop: 20 }}>uniqueId : {user.uniqueId}</Text>
-//     <TextInput
-//       placeholder="Enter other userId"
-//       value={recipientId}
-//       onChangeText={(text) => setRecipientId(text)}
-//     />
-//     <TouchableOpacity
-//       style={{
-//         backgroundColor: 'green',
-//         padding: 10,
-//         alignItems: 'center',
-//         marginTop: 20,
-//       }}
-//       onPress={() => {
-//         Client.startCall({
-//           recipientId: recipientId,
-//           callType: 'audio',
-//         });
-//       }}
-//     >
-//       <Text>Start Call</Text>
-//     </TouchableOpacity>
-//     {showIncomingCall && (
-//       <View style={{ marginTop: 20 }}>
-//         <Text>Call State : {callState.state}</Text>
-//         <TouchableOpacity
-//           style={{
-//             marginTop: 20,
-//             backgroundColor: 'green',
-//             padding: 10,
-//             alignItems: 'center',
-//           }}
-//           onPress={() => {
-//             setShowIncomingCall(false);
-//             Client.acceptCall();
-//           }}
-//         >
-//           <Text>Accept Call</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity
-//           style={{
-//             marginTop: 20,
-//             backgroundColor: 'red',
-//             padding: 10,
-//             alignItems: 'center',
-//           }}
-//           onPress={() => {
-//             setShowIncomingCall(false);
-//             Client.rejectCall();
-//           }}
-//         >
-//           <Text>Reject Call</Text>
-//         </TouchableOpacity>
-//       </View>
-//     )}
-//     {callState.state === 'ongoing' && (
-//       <View style={{ marginTop: 20 }}>
-//         <Text>Call State : {callState.state}</Text>
-//         <TouchableOpacity
-//           style={{
-//             marginTop: 20,
-//             backgroundColor: 'red',
-//             padding: 10,
-//             alignItems: 'center',
-//           }}
-//           onPress={() => Client.endCall()}
-//         >
-//           <Text>End Call</Text>
-//         </TouchableOpacity>
-//       </View>
-//     )}
-//     <TextInput
-//       placeholder="Enter message"
-//       value={selfMessage}
-//       onChangeText={(text) => setSelfMessage(text)}
-//       style={{
-//         marginTop: 20,
-//       }}
-//     />
-//     <TouchableOpacity
-//       style={{
-//         marginTop: 20,
-//         backgroundColor: 'orange',
-//         padding: 10,
-//         alignItems: 'center',
-//       }}
-//       onPress={() => {
-//         if (selfMessage.trim() !== '' && recipientId.trim() !== '') {
-//           Client.sendMessage({
-//             text: selfMessage,
-//             receiverId: recipientId,
-//             senderId: user.uniqueId,
-//           });
-//           setSelfMessage('');
-//         }
-//       }}
-//     >
-//       <Text>Send Message</Text>
-//     </TouchableOpacity>
-//   </View>
-// );

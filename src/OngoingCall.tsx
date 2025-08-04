@@ -17,6 +17,7 @@ interface OngoingCallProps {
   onHangup: () => void;
   profileImageUri: string;
   callDuration: string;
+  language?: string;
 }
 
 const OngoingCallScreen: React.FC<OngoingCallProps> = ({
@@ -27,6 +28,7 @@ const OngoingCallScreen: React.FC<OngoingCallProps> = ({
   onHangup,
   profileImageUri,
   callDuration,
+  language,
 }) => {
   return (
     <SafeAreaView style={styles.container}>
@@ -41,6 +43,8 @@ const OngoingCallScreen: React.FC<OngoingCallProps> = ({
       </View>
 
       {/* Title */}
+      <Text style={styles.title}> Selected Language {language || 'eng'} </Text>
+
       <Text style={styles.title}>Ongoing Call</Text>
 
       {/* Profile Section */}

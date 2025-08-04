@@ -15,6 +15,7 @@ interface IncomingCallProps {
   onReject: () => void;
   onMessage: () => void;
   profileImageUri: string;
+  language?: string;
 }
 
 const IncomingCallScreen: React.FC<IncomingCallProps> = ({
@@ -24,6 +25,7 @@ const IncomingCallScreen: React.FC<IncomingCallProps> = ({
   onReject,
   onMessage,
   profileImageUri,
+  language,
 }) => {
   return (
     <SafeAreaView style={styles.root}>
@@ -35,6 +37,7 @@ const IncomingCallScreen: React.FC<IncomingCallProps> = ({
           <Text style={{ marginRight: 4 }}>📶</Text>
         </View>
       </View>
+      <Text style={styles.title}> Selected Language {language || 'eng'} </Text>
 
       <Text style={styles.title}>Incoming call</Text>
 

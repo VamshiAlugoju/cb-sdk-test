@@ -15,6 +15,7 @@ interface OutgoingCallProps {
   onSpeaker: () => void;
   onHangup: () => void;
   profileImageUri: string;
+  language?: string;
 }
 
 const OutgoingCallScreen: React.FC<OutgoingCallProps> = ({
@@ -24,6 +25,7 @@ const OutgoingCallScreen: React.FC<OutgoingCallProps> = ({
   onSpeaker,
   onHangup,
   profileImageUri,
+  language,
 }) => {
   return (
     <SafeAreaView style={styles.container}>
@@ -38,6 +40,8 @@ const OutgoingCallScreen: React.FC<OutgoingCallProps> = ({
       </View>
 
       {/* Title */}
+      <Text style={styles.title}> Selected Language {language || 'eng'} </Text>
+
       <Text style={styles.title}>Outgoing call</Text>
 
       {/* Profile Section */}

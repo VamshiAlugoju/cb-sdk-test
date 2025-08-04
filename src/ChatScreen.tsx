@@ -35,7 +35,8 @@ const MessageBubble: React.FC<{
       ]}
     >
       <Text style={isSentByCurrentUser ? styles.textRight : styles.textLeft}>
-        {message.text}
+        {/* @ts-ignore
+        {message?.translatedText} */}
       </Text>
     </View>
   );
@@ -87,7 +88,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           ref={flatListRef}
           style={styles.messagesList}
           data={messages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={({ item }) => (
             <MessageBubble
               message={item}

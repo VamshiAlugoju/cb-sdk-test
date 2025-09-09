@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { CallBridge, Client } from 'sdk-call';
 import type { CallDetails, IMessage } from 'sdk-call';
 import IncomingCallScreen from './IncomingCallScreen';
@@ -7,20 +7,29 @@ import OngoingCallScreen from './OngoingCall';
 import OutgoingCallScreen from './OutgoingCallScreen';
 import IdleScreen from './IdleScreen';
 import ChatScreen from './ChatScreen';
+import Login, { User } from './components/Login';
+import { getReceiverId, translateText } from './lib';
+import DeliveryTrackingScreen from './components/DeliveryTrackingScreen';
+import GenderPickerModal, { Gender } from './components/GenderPickerModal';
 
-const languages = ['hin', 'eng', 'tel'];
 export default function MainApp() {
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<User>({
     apiKey: 'your-api-key',
-    uniqueId: Math.floor(Math.random() * 1000).toString(),
+    uniqueId: "",
   });
 
-  const [mode, setMode] = useState<'normal' | 'call' | 'chat'>('normal');
+  const [mode, setMode] = useState<
+    'normal' | 'call' | 'chat' | 'login' | 'user-info'
+  >('login');
+
+  const [showGenderPickerModal, setShowGenderPickerModal] = useState(false);
 
   const [messages, setMessages] = useState<IMessage[]>([]);
 
   const [recipientId, setRecipientId] = useState('');
   const [lang, setLang] = useState('eng');
+  const [srcLang, setSrcLang] = useState('eng');
+  const [gender, setGender] = useState<Gender>('male');
 
   const [callState, setCallState] = useState({
     ...Client.callState,
@@ -32,8 +41,16 @@ export default function MainApp() {
 
   function handleIncomingCall(payload: any) {}
 
-  function handleReceiveMessage(message: any) {
-    setMessages(prev => [...prev, message]);
+  async function handleReceiveMessage(message: any) {
+    const translatedText: string | null = await translateText({
+      text: message.text,
+      targetLang: lang,
+      apiKey: user.apiKey,
+    });
+    console.log(translatedText);
+
+    const updatedMessage = { ...message, translatedText };
+    setMessages(prev => [...prev, updatedMessage]);
   }
 
   function handleCallAnswered(payload: any) {
@@ -46,10 +63,15 @@ export default function MainApp() {
   }
 
   useEffect(() => {
+    if (!user.uniqueId) return;
+    const receiverId = getReceiverId(user.uniqueId);
+    if (!receiverId) return;
+    setRecipientId(receiverId);
+    setMode('normal');
     Client.onIncomingCall(handleIncomingCall);
     Client.onCallStateChange(handleCallStateChange);
     Client.onCallAnswered(handleCallAnswered);
-    Client.onReceiveMessage(handleReceiveMessage);
+    // Client.onReceiveMessage(handleReceiveMessage);
     console.log('user called init');
     setTimeout(() => {
       Client.init(user);
@@ -62,63 +84,19 @@ export default function MainApp() {
     };
   }, [user]);
 
-  console.log('callState', callState);
+  useEffect(() => {
+    Client.onReceiveMessage(handleReceiveMessage);
+  }, [user, lang]);
+
+  useEffect(() => {
+    if (!user.uniqueId) return;
+    setShowGenderPickerModal(true);
+  }, [user.uniqueId]);
 
   return (
-    <View style={styles.container}>
+    <View style={stylesSheet.container}>
       <CallBridge />
-      {callState.state === 'idle' && mode != 'chat' && (
-        <View>
-          <TouchableOpacity
-            style={{
-              backgroundColor: 'red',
-              padding: 10,
-            }}
-            onPress={() => {
-              Client.changeLanguage(languages[0]);
-              setLang(languages[0]);
-            }}
-          >
-            <Text>{languages[0]}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              backgroundColor: 'blue',
-              padding: 10,
-              marginTop: 10,
-            }}
-            onPress={() => {
-              Client.changeLanguage(languages[1]);
-              setLang(languages[1]);
-            }}
-          >
-            <Text>{languages[1]}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              backgroundColor: 'blue',
-              padding: 10,
-              marginTop: 10,
-            }}
-            onPress={() => {
-              Client.changeLanguage(languages[2]);
-              setLang(languages[2]);
-            }}
-          >
-            <Text>{languages[2]}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              Client.init(user);
-            }}
-            style={{
-              padding: 10,
-            }}
-          >
-            <Text>init</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {mode === 'login' && <Login setUser={setUser} />}
 
       {(mode === 'call' || mode === 'normal') && (
         <View style={{ flex: 1 }}>
@@ -126,8 +104,8 @@ export default function MainApp() {
             <IncomingCallScreen
               callerName="Philippe Troussier"
               callerNumber="84898XXX"
-              onAccept={() => {
-                Client.acceptCall();
+              onAccept={(targetLang: string) => {
+                Client.acceptCall({targetLang, srcLang, gender});
               }}
               onReject={() => {
                 Client.rejectCall();
@@ -137,6 +115,7 @@ export default function MainApp() {
               }}
               profileImageUri="https://picsum.photos/200/300" // Update to actual source
               language={lang}
+              setTargetLangForChat={setLang}
             />
           )}
           {callState.state === 'ongoing' && (
@@ -176,19 +155,24 @@ export default function MainApp() {
             />
           )}
           {callState.state === 'idle' && (
-            <IdleScreen
+            <DeliveryTrackingScreen
               recipientId={recipientId}
               setRecipientId={setRecipientId}
-              onStartCall={(recipientId: string) => {
+              onStartCall={(recipientId: string, tgtLang: string) => {
                 Client.startCall({
                   recipientId: recipientId,
                   callType: 'audio',
+                  targetLang: tgtLang,
+                  srcLang: srcLang,
+                  gender: gender
                 });
               }}
               onChat={() => {
                 setMode('chat');
               }}
               userId={user.uniqueId}
+              setTargetLangForChat={setLang}
+              setShowGenderPickerModal={setShowGenderPickerModal}
             />
           )}
         </View>
@@ -220,17 +204,57 @@ export default function MainApp() {
             onBack={() => {
               setMode('normal');
             }}
+            language={lang}
           />
         </View>
       )}
+
+      <GenderPickerModal
+        setShowGenderPickerModal={setShowGenderPickerModal}
+        showGenderPickerModal={showGenderPickerModal}
+        setGender={setGender}
+        gender={gender}
+        setSrcLang={setSrcLang}
+        srcLang={srcLang}
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesSheet = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 40,
     backgroundColor: 'white',
   },
 });
+
+// <Dropdown
+//   options={languageOptions}
+//   selected={lang}
+//   onSelect={value => {
+//     Client.changeLanguage(value);
+//     setLang(value);
+//   }}
+//   placeholder="Select Language"
+// />
+
+{
+  /* {callState.state === 'idle' && mode != 'chat' && (
+        <View>
+          <TouchableOpacity
+            onPress={() => {
+              Client.init(user);
+            }}
+            style={{
+              padding: 10,
+            }}
+          >
+            <Text>init</Text>
+          </TouchableOpacity>
+        </View>
+      )} */
+}
+
+// customer@zomato@123
+// agent@zomato@123

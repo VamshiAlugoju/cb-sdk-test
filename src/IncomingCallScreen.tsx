@@ -7,15 +7,17 @@ import {
   Image,
   SafeAreaView,
 } from 'react-native';
+import LanguagePickerModal from './components/LanguagePickerModal';
 
 interface IncomingCallProps {
   callerName: string;
   callerNumber: string;
-  onAccept: () => void;
+  onAccept: (targetLang: string) => void;
   onReject: () => void;
   onMessage: () => void;
   profileImageUri: string;
   language?: string;
+  setTargetLangForChat: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const IncomingCallScreen: React.FC<IncomingCallProps> = ({
@@ -26,7 +28,25 @@ const IncomingCallScreen: React.FC<IncomingCallProps> = ({
   onMessage,
   profileImageUri,
   language,
+  ...props
 }) => {
+  const [showLangPickerModal, setShowLangPickerModal] = React.useState(false);
+  const handleAccept = () => {
+    setShowLangPickerModal(true);
+  };
+  const handleLangBtnClick = (
+    lang: string,
+    modalContext: 'incoming-call' | 'outgoing-call' | 'chat',
+  ) => {
+    if (modalContext === 'incoming-call') {
+      props.setTargetLangForChat(lang);
+      onAccept(lang);
+    }
+  };
+
+  const closeModal = () => {
+    setShowLangPickerModal(false);
+  };
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
@@ -59,7 +79,7 @@ const IncomingCallScreen: React.FC<IncomingCallProps> = ({
         <TouchableOpacity onPress={onReject} style={styles.rejectButton}>
           <Text style={styles.buttonIcon}>📞</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onAccept} style={styles.acceptButton}>
+        <TouchableOpacity onPress={handleAccept} style={styles.acceptButton}>
           <Text style={styles.buttonIcon}>📞</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onMessage} style={styles.smsButton}>
@@ -71,6 +91,15 @@ const IncomingCallScreen: React.FC<IncomingCallProps> = ({
         <Text style={styles.poweredBy}>Powered by</Text>
         <Text style={styles.appBrand}>ChatBucket</Text>
       </View>
+
+      {showLangPickerModal && (
+        <LanguagePickerModal
+          visible={showLangPickerModal}
+          modalContext="incoming-call"
+          onClose={closeModal}
+          onBtnClick={handleLangBtnClick}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -194,12 +223,3 @@ const styles = StyleSheet.create({
 });
 
 export default IncomingCallScreen;
-
-// <IncomingCallScreen
-//   callerName="Philippe Troussier"
-//   callerNumber="84898XXX"
-//   onAccept={() => {/* Accept logic */}}
-//   onReject={() => {/* Reject logic */}}
-//   onMessage={() => {/* Message logic */}}
-//   profileImageUri="https://example.com/photo.jpg" // Update to actual source
-// />

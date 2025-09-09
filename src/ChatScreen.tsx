@@ -13,17 +13,22 @@ import {
 } from 'react-native';
 import type { IMessage } from 'sdk-call';
 
+type TMessage = IMessage & {
+  translatedText?: string;
+};
+
 interface ChatScreenProps {
   currentUserId: string;
   chatPartnerId: string;
   messages: IMessage[];
   onSend: (message: string) => void;
   onBack: () => void;
+  language: string;
 }
 
 // Message bubble component
 const MessageBubble: React.FC<{
-  message: IMessage;
+  message: TMessage;
   isSentByCurrentUser: boolean;
 }> = ({ message, isSentByCurrentUser }) => {
   console.log('message', message);
@@ -35,8 +40,7 @@ const MessageBubble: React.FC<{
       ]}
     >
       <Text style={isSentByCurrentUser ? styles.textRight : styles.textLeft}>
-        {/* @ts-ignore
-        {message?.translatedText} */}
+        {message.translatedText ? message.translatedText : message.text}
       </Text>
     </View>
   );
@@ -48,6 +52,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   messages,
   onSend,
   onBack,
+  language,
 }) => {
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -61,7 +66,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-
     onSend(inputText.trim());
     setInputText('');
     Keyboard.dismiss();
@@ -69,60 +73,56 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.select({ ios: 'padding', android: undefined })}
-        keyboardVerticalOffset={90}
-      >
-        {/* // header  */}
-        <View style={{}}>
-          <TouchableOpacity
-            onPress={() => {
-              onBack();
-            }}
-          >
-            <Text style={{ fontSize: 50 }}>{'<-'}</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          ref={flatListRef}
-          style={styles.messagesList}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              isSentByCurrentUser={item.senderId === currentUserId}
-            />
-          )}
-          contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 16 }}
-          showsVerticalScrollIndicator={false}
-          inverted={false} // Keep messages bottom to top naturally
-        />
+  <KeyboardAvoidingView
+    style={styles.container}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 35} // adjust if you have header
+  >
+    {/* header */}
+    <View>
+      <TouchableOpacity onPress={onBack}>
+        <Text style={{ fontSize: 16, paddingLeft: 16, textDecorationLine: 'underline' }}>Back</Text>
+      </TouchableOpacity>
+      <Text style={{ fontSize: 16, paddingLeft: 16 }}>{language}</Text>
+    </View>
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Type a message"
-            placeholderTextColor="#aaa"
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            scrollEnabled={false}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              !inputText.trim() && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <FlatList
+      ref={flatListRef}
+      style={styles.messagesList}
+      data={messages}
+      keyExtractor={(item, index) => index.toString()}
+      renderItem={({ item }) => (
+        <MessageBubble
+          message={item}
+          isSentByCurrentUser={item.senderId === currentUserId}
+        />
+      )}
+      contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 16 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    />
+
+    <View style={styles.inputContainer}>
+      <TextInput
+        placeholder="Type a message"
+        placeholderTextColor="#aaa"
+        style={styles.input}
+        value={inputText}
+        onChangeText={setInputText}
+        multiline
+        scrollEnabled={false}
+      />
+      <TouchableOpacity
+        style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+        onPress={handleSend}
+        disabled={!inputText.trim()}
+      >
+        <Text style={styles.sendButtonText}>Send</Text>
+      </TouchableOpacity>
+    </View>
+  </KeyboardAvoidingView>
+</SafeAreaView>
+
   );
 };
 
